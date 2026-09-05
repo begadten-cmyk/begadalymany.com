@@ -1,0 +1,259 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Theme
+ * ------------------------------------------------------------------ */
+@theme {
+  --font-display: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* The palette the site settles into after the story resolves. */
+  --color-ink: #0a0a0c;
+  --color-ink-raised: #101015;
+  --color-ink-line: #24242c;
+  --color-paper: #f5f3f0;
+  --color-muted: #a3a1ad;
+  --color-accent: #8b7cff;
+  --color-accent-soft: #b7aeff;
+  --color-accent-2: #4fa8ff;
+
+  /* Era colors, exposed as utilities so data + CSS agree on one source. */
+  --color-era-terracotta: #a83a20;
+  --color-era-amber: #b8860f;
+  --color-era-emerald: #0f7355;
+  --color-era-coral: #c04862;
+  --color-era-orange: #d45f09;
+  --color-era-violet: #6a22bc;
+  --color-era-blue: #1568b5;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+@layer base {
+  :root {
+    color-scheme: dark;
+    --page-gutter: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --page-gutter: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    :root {
+      --page-gutter: 4.5rem;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Lenis drives scrolling; this is the no-JS / reduced-motion fallback. */
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 40%, transparent);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-soft);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Lenis */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Utilities
+ * ------------------------------------------------------------------ */
+@utility gutter {
+  padding-inline: var(--page-gutter);
+}
+
+@utility shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 84rem;
+  padding-inline: var(--page-gutter);
+}
+
+/* Optical hairline used to separate blocks in the settled palette. */
+@utility hairline {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, currentColor 22%, transparent) 12%,
+    color-mix(in oklab, currentColor 22%, transparent) 88%,
+    transparent
+  );
+  height: 1px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Typography helpers
+ * ------------------------------------------------------------------ */
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.balance {
+  text-wrap: balance;
+}
+
+.pretty {
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------------------ *
+ * The story backdrop
+ *
+ * Each era is its own absolutely-positioned layer. Scroll only ever
+ * animates `opacity`, so the color morph is a pure compositor job and
+ * stays smooth on mobile. Crossfading layer B over layer A at opacity t
+ * is exactly a linear interpolation between the two colors.
+ * ------------------------------------------------------------------ */
+.era-layer {
+  position: absolute;
+  inset: 0;
+  background-color: var(--era-base);
+  will-change: opacity;
+}
+
+.era-layer::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  background: radial-gradient(
+    50% 45% at 50% 42%,
+    color-mix(in oklab, var(--era-glow) 88%, transparent) 0%,
+    color-mix(in oklab, var(--era-glow) 34%, transparent) 42%,
+    transparent 72%
+  );
+  animation: drift 26s var(--ease-out-expo) infinite alternate;
+  animation-delay: var(--drift-delay, 0s);
+  will-change: transform;
+}
+
+.era-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 50% 118%,
+    color-mix(in oklab, var(--era-base) 0%, transparent) 0%,
+    color-mix(in oklab, #000 55%, transparent) 100%
+  );
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.12);
+  }
+}
+
+/* Film grain.
+ *
+ * Deliberately NOT `mix-blend-mode`. A blended full-viewport layer forces the
+ * compositor to read the backdrop back and re-blend the whole screen on every
+ * frame; measured on this page that alone cost ~15fps and every dropped frame
+ * during scroll (44.9fps -> 60.2fps once removed). Plain alpha compositing over
+ * a light-speckle texture gets the same job done - breaking up banding in the
+ * large era gradients - for free. */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='1.1' intercept='-0.45'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.07;
+}
+
+/* ------------------------------------------------------------------ *
+ * Reduced motion
+ *
+ * prefers-reduced-motion is an OS accessibility setting, not a style
+ * choice, so the scroll-linked layer is dropped entirely and each
+ * chapter simply paints its own era color. The color story survives;
+ * the motion does not.
+ * ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .story-backdrop {
+    display: none;
+  }
+
+  /* Each chapter simply becomes a full-height block painted in its own era
+     color: the story still reads in color, it just no longer moves. */
+  [data-chapter] {
+    height: auto;
+    min-height: 100svh;
+    background-color: var(--era-base);
+    background-image: radial-gradient(
+      70% 55% at 50% 40%,
+      color-mix(in oklab, var(--era-glow) 55%, transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  [data-ch-inner] {
+    position: static;
+    height: auto;
+    min-height: 100svh;
+    padding-block: 4rem;
+  }
+}
+
+@keyframes cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  60%,
+  100% {
+    transform: translateY(340%);
+  }
+}
