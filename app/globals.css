@@ -17,6 +17,7 @@
   --color-accent: #8b7cff;
   --color-accent-soft: #b7aeff;
   --color-accent-2: #4fa8ff;
+  --color-live: #5fe3b0;
 
   /* Era colors, exposed as utilities so data + CSS agree on one source. */
   --color-era-terracotta: #a83a20;
@@ -53,8 +54,14 @@
 
   html {
     -webkit-text-size-adjust: 100%;
-    /* Lenis drives scrolling; this is the no-JS / reduced-motion fallback. */
-    scroll-behavior: smooth;
+  }
+
+  /* No-JS fallback only. Once Lenis or ScrollTrigger is running, native smooth
+     scrolling would animate the jumps they make to position and measure. */
+  @media (prefers-reduced-motion: no-preference) {
+    html:not(.lenis) {
+      scroll-behavior: smooth;
+    }
   }
 
   body {
@@ -161,16 +168,17 @@
 .era-layer::before {
   content: "";
   position: absolute;
-  inset: -25%;
+  /* Just enough overscan to hide the edges while drifting. At full-viewport
+     scale every extra percent here is real GPU memory on a Retina screen. */
+  inset: -8%;
   background: radial-gradient(
-    50% 45% at 50% 42%,
+    64.5% 58% at 50% 40%,
     color-mix(in oklab, var(--era-glow) 88%, transparent) 0%,
     color-mix(in oklab, var(--era-glow) 34%, transparent) 42%,
     transparent 72%
   );
   animation: drift 26s var(--ease-out-expo) infinite alternate;
   animation-delay: var(--drift-delay, 0s);
-  will-change: transform;
 }
 
 .era-layer::after {
@@ -255,5 +263,17 @@
   60%,
   100% {
     transform: translateY(340%);
+  }
+}
+
+@keyframes live-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
   }
 }

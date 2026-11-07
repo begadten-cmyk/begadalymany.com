@@ -2,6 +2,8 @@ export type Company = {
   id: string;
   name: string;
   tagline: string;
+  /** Live product site. The domain shown on the card is derived from this. */
+  url: string;
   role: string;
   status: string;
   body: string[];
@@ -18,6 +20,7 @@ export const companies: Company[] = [
   {
     id: "acronix",
     name: "Acronix",
+    url: "https://acronixai.com",
     tagline: "AI ops software for mid-market service businesses",
     role: "Founder",
     status: "Operating",
@@ -40,9 +43,10 @@ export const companies: Company[] = [
   {
     id: "medarix",
     name: "Medarix",
+    url: "https://medarix.ai",
     tagline: "HIPAA-compliant AI for medical claim appeals",
     role: "Founder",
-    status: "Building",
+    status: "Operating",
     body: [
       "A constrained state-machine pipeline that autonomously drafts payer denial appeals: deterministic parsing on the way in, an LLM only where language is actually the work, and a mandatory physician sign-off before anything leaves the system.",
       "The whole pipeline runs inside an Azure AI Foundry compliance boundary, so the model never becomes the thing standing between a patient and a decision.",

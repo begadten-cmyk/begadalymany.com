@@ -81,15 +81,15 @@ export default function StoryMotion() {
           },
         });
         exit
-          .to(inner, { opacity: 1, duration: 0.6 })
+          .to(inner, { autoAlpha: 1, duration: 0.6 })
           .to(inner, {
-            opacity: 0,
+            autoAlpha: 0,
             yPercent: -6,
             scale: 0.965,
             ease: "power1.in",
             duration: 0.36,
           })
-          .to(inner, { opacity: 0, duration: 0.04 });
+          .to(inner, { autoAlpha: 0, duration: 0.04 });
 
         // ---- Slow parallax on the image while the panel is held.
         if (mediaInner) {

@@ -13,6 +13,10 @@ import { overture, settled } from "@/data/site";
  * on a phone. Crossfading layer B in over layer A at opacity t is exactly a
  * linear interpolation between the two colors, which is why this reads as a
  * true morph rather than a dissolve.
+ *
+ * Only the layers that can be seen are rendered. A layer fully covered by the
+ * one above it, or not yet faded in, is `visibility: hidden`, so at most two
+ * eras hold GPU memory at once rather than all nine.
  */
 export default function StoryBackdrop() {
   const root = useRef<HTMLDivElement>(null);
@@ -29,24 +33,43 @@ export default function StoryBackdrop() {
           document.querySelectorAll<HTMLElement>("[data-chapter]"),
         );
 
+        const tweens = new Map<number, gsap.core.Tween>();
+        // Also runs on refresh: restoring a scroll position on reload moves
+        // the tweens without firing onUpdate.
+        const sync = () => {
+          const shown = layers.map((_, i) =>
+            i === 0 ? 1 : (tweens.get(i)?.progress() ?? 0),
+          );
+          const top = shown.lastIndexOf(1);
+          layers.forEach((layer, i) => {
+            const visible = i >= top && shown[i] > 0;
+            layer.style.visibility = visible ? "visible" : "hidden";
+          });
+        };
+
         // Layer 0 is the overture and always sits underneath.
         sections.forEach((section, i) => {
           const layer = layers[i + 1];
           if (!layer) return;
-          gsap.fromTo(
-            layer,
-            { opacity: 0 },
-            {
-              opacity: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: section,
-                start: "top bottom",
-                end: "top top",
-                scrub: true,
-                invalidateOnRefresh: true,
+          tweens.set(
+            i + 1,
+            gsap.fromTo(
+              layer,
+              { opacity: 0 },
+              {
+                opacity: 1,
+                ease: "none",
+                onUpdate: sync,
+                scrollTrigger: {
+                  trigger: section,
+                  start: "top bottom",
+                  end: "top top",
+                  scrub: true,
+                  invalidateOnRefresh: true,
+                  onRefresh: sync,
+                },
               },
-            },
+            ),
           );
         });
 
@@ -55,22 +78,29 @@ export default function StoryBackdrop() {
         const outro = document.querySelector<HTMLElement>("[data-story-outro]");
         const settledLayer = layers[layers.length - 1];
         if (outro && settledLayer) {
-          gsap.fromTo(
-            settledLayer,
-            { opacity: 0 },
-            {
-              opacity: 1,
-              ease: "none",
-              scrollTrigger: {
-                trigger: outro,
-                start: "top bottom",
-                end: "top 30%",
-                scrub: true,
-                invalidateOnRefresh: true,
+          tweens.set(
+            layers.length - 1,
+            gsap.fromTo(
+              settledLayer,
+              { opacity: 0 },
+              {
+                opacity: 1,
+                ease: "none",
+                onUpdate: sync,
+                scrollTrigger: {
+                  trigger: outro,
+                  start: "top bottom",
+                  end: "top 30%",
+                  scrub: true,
+                  invalidateOnRefresh: true,
+                  onRefresh: sync,
+                },
               },
-            },
+            ),
           );
         }
+
+        sync();
       });
 
       return () => mm.revert();
@@ -97,6 +127,7 @@ export default function StoryBackdrop() {
               "--era-glow": p.glow,
               "--drift-delay": `${i * -3.2}s`,
               opacity: i === 0 ? 1 : 0,
+              visibility: i === 0 ? "visible" : "hidden",
             } as CSSProperties
           }
         />
